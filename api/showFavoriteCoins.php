@@ -31,7 +31,9 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
 
     }
     else{
+        echo json_encode(
+            array('message' => 'Sorry, you need to verify your account in order to access this page!')
+        );
         
-    print("Sorry, you need to verify your account in order to access this page!");
     }
 }
