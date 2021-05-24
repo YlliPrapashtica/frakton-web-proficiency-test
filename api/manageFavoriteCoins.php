@@ -16,11 +16,10 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
     exit;
 } else {
 
-
+    //Check If User Is Authorized
     $query = "SELECT * FROM users WHERE email=? AND isAuthed = '1'";
 
     $stmt = $db->prepare($query);
-
 
     $email = htmlspecialchars(strip_tags($_SERVER['PHP_AUTH_USER']));
 
@@ -28,48 +27,55 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
 
     if ($stmt->rowCount() > 0) {
         //user is authorized
-        
+
         $cryptoCoins = new CryptoCoins();
 
+        //Get Posted Data
         $data = json_decode(file_get_contents("php://input"));
 
         $url = 'https://api.coincap.io/v2/assets';
 
         $decoded = json_decode(file_get_contents($url), true);
+        //Array of Decoded Data
         $allData = $decoded['data'];
 
+        //Add CryptoCoins Here
         $all_crypto = array();
         $all_crypto['id'] = array();
 
         foreach ($allData as $singleData) {
-
+            //Get Only CoinID of Crypto Coins
             $singleCoinID = $singleData['id'];
 
             array_push($all_crypto['id'], $singleCoinID);
         }
-
+        //Set Posted Data
         $coinID = $data->coinID;
-        $userID = $data->userID;
         $mode = $data->mode;
+
+        //Check If The ID Of The Coin Exists
         if (in_array($coinID, $all_crypto['id'])) {
-            if($mode == 'add'){
+            //if Mode = 'add' -> Run Add Favorite Coin Function
+            if ($mode == 'add') {
 
-                $cryptoCoins->insertFavoriteCoins($db,$coinID,$userID);
+                $cryptoCoins->insertFavoriteCoins($db, $coinID, $email);
             }
-            elseif($mode == 'remove'){
 
-                $cryptoCoins->removeFavoriteCoins($db,$coinID,$userID);
+            //if Mode = 'remove' -> Run Remove Favorite Coin Function
+            elseif ($mode == 'remove') {
+
+                $cryptoCoins->removeFavoriteCoins($db, $coinID, $email);
             }
-    }else {
+        } else {
+            //Coin ID Doesnt Exist
+            echo json_encode(
+                array('message' => 'Coin ID Doesnt Exist!')
+            );
+        }
+    } else {
+        //User Not Verified
         echo json_encode(
-            array('message' => 'Coin ID Doesnt Exist!')
+            array('message' => 'Sorry, you need to verify your account in order to access this page!')
         );
     }
-} else{
-    echo json_encode(
-        array('message' => 'Sorry, you need to verify your account in order to access this page!')
-    );
-    
-}
-
 }

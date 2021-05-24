@@ -9,8 +9,24 @@ class CryptoCoins
     public $coinSupply;
     public $coinMaxSupply;
 
-    public function insertFavoriteCoins($db, $coinID, $userID)
+    public function insertFavoriteCoins($db, $coinID, $email)
     {
+
+        // Get UserID From Authorized Email
+        $query = "SELECT ID FROM users WHERE email=:email";
+
+        $stmt = $db->prepare($query);
+
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        $data = $stmt->fetchAll();
+
+        foreach ($data as $row) {
+            $userID = $row[0];
+        }
+
+
+        //Insert favorite Coin which requires the CryptoCoin ID And The Authorized Email 
         $query = 'INSERT INTO favorite_coins SET coinID = :coinID, userID = :userID ';
 
         $stmt = $db->prepare($query);
@@ -34,16 +50,19 @@ class CryptoCoins
             }
         }
     }
-    public function removeFavoriteCoins($db, $coinID, $userID)
+    public function removeFavoriteCoins($db, $coinID, $email)
     {
-        $query = 'DELETE FROM favorite_coins WHERE  coinID = :coinID AND userID = :userID';
+
+
+        //Remove favorite Coin which requires the CryptoCoin ID And The Authorized Email 
+        $query = 'DELETE f FROM favorite_coins as f LEFT JOIN  users u ON  u.ID = f.userID WHERE u.email=:email AND f.coinID=:coinID    ';
 
         $stmt = $db->prepare($query);
 
-        if (!is_null($coinID) && !is_null($userID)) {
+        if (!is_null($coinID) && !is_null($email)) {
 
             $stmt->bindParam(':coinID', $coinID);
-            $stmt->bindParam(':userID', $userID);
+            $stmt->bindParam(':email', $email);
             $stmt->execute();
 
             if ($stmt->rowCount() > 0) {
@@ -59,6 +78,7 @@ class CryptoCoins
     }
     public function printFavoriteCoins($db, $email)
     {
+        //Select The CryptoCoin CoinID To Get All Favorite CryptoCoins Based On The CoinID
         $query = "SELECT f.coinID FROM favorite_coins f LEFT JOIN  users u ON f.userID = u.ID  WHERE u.email='" . $email . "'";
 
         $stmt = $db->prepare($query);
@@ -80,6 +100,8 @@ class CryptoCoins
         $user_crypto = array();
         $user_crypto['data'] = array();
 
+
+        //New CryptoCoin
         $cryptoCoin = new CryptoCoins();
 
         foreach ($allData as $data) {
@@ -90,8 +112,9 @@ class CryptoCoins
             $coinName =  $data['name'];
             $coinSupply =  $data['supply'];
             $coinMaxSupply =  $data['maxSupply'];
-            foreach($coins as $coin){
-                if($coin == $coinID){
+            foreach ($coins as $coin) {
+                //Only Create Coins Based On User's Favorite Coin IDs
+                if ($coin == $coinID) {
                     $cryptoCoin = array(
                         'id' => $coinID,
                         'rank' => $coinRank,
@@ -99,13 +122,12 @@ class CryptoCoins
                         'name' => $coinName,
                         'supply' => $coinSupply,
                         'maxSupply' => $coinMaxSupply,
-                    
+
                     );
-                
+                    //Collect All Favorite CryptoCoins
                     array_push($user_crypto['data'], $cryptoCoin);
                 }
             }
-            
         }
         return json_encode($user_crypto, JSON_PRETTY_PRINT);
     }
@@ -121,8 +143,10 @@ class CryptoCoins
         $user_crypto = array();
         $user_crypto['data'] = array();
 
+        //New Crypto Coin
         $cryptoCoin = new CryptoCoins();
 
+        //Collect Required Coin Data
         foreach ($allData as $data) {
 
             $coinID = $data['id'];
@@ -141,6 +165,7 @@ class CryptoCoins
                 'maxSupply' => $coinMaxSupply,
 
             );
+
             array_push($user_crypto['data'], $cryptoCoin);
         }
         return json_encode($user_crypto, JSON_PRETTY_PRINT);

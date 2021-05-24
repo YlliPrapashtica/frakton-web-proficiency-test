@@ -1,4 +1,5 @@
 <?php
+//headers
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
@@ -13,6 +14,7 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
     print("Sorry, you need to verify your account in order to access this page!");
     exit;
 } else {
+    //Check If User Is Authorized
     $query = "SELECT * FROM users WHERE email=? AND isAuthed = '1'";
 
     $stmt = $db->prepare($query);
@@ -23,17 +25,15 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
 
     if ($stmt->rowCount() > 0) {
         //user is authorized
-
         
         $cryptoCoins = new CryptoCoins();
 
-        echo $cryptoCoins->printFavoriteCoins($db,$email);
-
-    }
-    else{
+        //Print Users Favorite Coins As JSON
+        echo $cryptoCoins->printFavoriteCoins($db, $email);
+    } else {
+        //User Not Authorized
         echo json_encode(
             array('message' => 'Sorry, you need to verify your account in order to access this page!')
         );
-        
     }
 }
